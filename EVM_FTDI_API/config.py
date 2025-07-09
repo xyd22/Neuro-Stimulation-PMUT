@@ -76,4 +76,27 @@ mem_start_word = 0x001E
 
 
 pattern = [0xB5B10000, 0xFF00B5B1]
-# 5.6 MHz_3LVL_A Wave
+# some example patterns
+# deviceWrite(deviceEvm, 0x5C, 0xA0A00000, pageSelect=0x0000FFFF) # TRSW Glitch --OURS--nothing		
+# deviceWrite(deviceEvm, 0x5D, 0x0000FF00, pageSelect=0x0000FFFF) # TRSW Glitch --OURS--		
+# deviceWrite(deviceEvm, 0x5E, 0xB5B10000, pageSelect=0x0000FFFF) # 5.6 MHz_3LVL_A Wave --OURS-- 5.6
+# deviceWrite(deviceEvm, 0x5F, 0xFF00B5B1, pageSelect=0x0000FFFF) # 5.6 MHz_3LVL_A Wave --OURS--		
+# deviceWrite(deviceEvm, 0x52, 0x31f90000, pageSelect=0x0000FFFF) # 3.4 MHz_2LVL_A Wave --OURS-- 1.66 2.4 3.4 0xf9f90001 0xa9f90000 0x31f90000		
+# deviceWrite(deviceEvm, 0x53, 0x31f935fd, pageSelect=0x0000FFFF) # 3.4 MHz_2LVL_A Wave --OURS-- 0x6dfdfd69 0xa9f9adfd 0x31f935fd
+# deviceWrite(deviceEvm, 0x54, 0xff0035fd, pageSelect=0x0000FFFF) # 3.4 MHz_2LVL_A Wave --OURS-- 0x0000ff00 0xff00adfd 0xff0035fd
+
+# e.g. 0xB5B10000 -> 1011 0101 1011 0001 0000 0000 0000 0000 
+# 		-> PER1 = 10110 = 22; LVL1 = 101 -> AVDDM_HV_A (2A drive)
+#		-> PER2 = 10110 = 22; LVL2 = 001 -> AVDDP_HV_A (2A drive)
+# 		-> GLB_REP_NUM = 0; LOCAL_REP_NUM = 0
+# 	   0xFF00B5B1 -> B5B1 continously read byte by byte -> another waveform -> 2 cycles of pulse
+#		-> 00 -> LOCAL_REP_END; FF -> GBL_REP_END
+# 	   default 250MHz -> f = 250MHz / (2*22) = 5.68MHz; 2 cycles of square wave
+# e.g. 0x31f90000 -> 0011 0001 1111 1001 ...
+#		-> PER1 = 6; LVL1 = 001; PER2 = 31; LVL2 = 001; -> 37 cycles of AVDDP_HV_A
+#	   0x31f935fd -> 31f9 0011 0101 1111 1101
+# 		-> PER3 = 6; LVL4 = 101; PER4 = 31; LVL4 = 101; -> 37 cycles of AVDDM_HV_A
+#		repeat for 2 cycles
+#		ff00 -> glb & local end
+# 	   default 250MHz -> f = 250MHz / (2*37) = 3.38MHz; 2 cycles of square wave
+# !! refer to P34~36 pipeline and Table 8-5

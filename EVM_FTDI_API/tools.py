@@ -48,7 +48,7 @@ def deviceWrite(deviceEvm,address,data,pageSelect=0):
     # Page select does not matter for GBL_PAGE (Refer datasheet)
     deviceEvm.writeReg(2,pageSelect)
     # Uncomment the below line if using 2 lane SPI mode. Register 3 corresponds to lane 2 page select
-    #deviceEvm.writeReg(3,pageSelect)
+    # deviceEvm.writeReg(3,pageSelect)
     # Write the value into the required address
     deviceEvm.writeReg(address,data)
     # Set the page select value to 0. This step is not necessary.
@@ -60,7 +60,7 @@ def deviceRead(deviceEvm,address,pageSelect=0):
     # Page select does not matter for GBL_PAGE (Refer datasheet)
     deviceEvm.writeReg(2,pageSelect)
     # Uncomment the below line if using 2 lane SPI mode. Register 3 corresponds to lane 2 page select
-    #deviceEvm.writeReg(3,pageSelect)
+    # deviceEvm.writeReg(3,pageSelect)
     # Enable read mode in the device by setting 2nd bit to 1 in register 0 (Reg 0[1:1])
     deviceEvm.writeReg(0,2)
     # Read the register value
