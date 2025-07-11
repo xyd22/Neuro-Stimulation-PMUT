@@ -32,6 +32,9 @@ def hardwareReset(dev):
 	time.sleep(0.0001)
 	dev.write(bytes([0x00]))
 
+
+    # Seems no need for external WAKE_UP signal !!!???
+	#===================================================
 	# Wait for WAKE_UP (200 us pulse), need an external microcontroller to control
 	#================
 	print("Waiting for WAKE_UP signal for 5s...")
@@ -75,7 +78,7 @@ def deviceRead(deviceEvm,address,pageSelect=0):
 # prat_dev = mTX7516_QPort.TX7516(regProgDevice=qport_TX7516, fileName=PROJECTS_LIB + r"\DMLs\Datasheet_TX7516_PG2P0_Rev4_ver1.dml", name="TX7516 Register Map")
 # print("Initialized TX7516 with register map")
 
-def boardDiagnostics(deviceEvm):
+def boardDiagnostics_TX7516(deviceEvm):
 	flag = True
 	while flag == True:
 		# Convert the number to a 32-bit binary string
@@ -106,6 +109,53 @@ def boardDiagnostics(deviceEvm):
 		if flag == False:
 			print("Diagnostics failed, reset the error flags")
 			if val[19] != '1': # NO_CLK_ERR
+				deviceWrite(deviceEvm, 0x08, 0x00000002)
+			deviceWrite(deviceEvm, 0x2B, 1 << 26) # Set the ERROR_RST bit to 1 to reset the error flags
+			time.sleep(1)
+			deviceWrite(deviceEvm, 0x2B, 0) # Reset the ERROR_RST bit to 0
+			flag = True # Try again
+		elif flag == True:
+			return
+
+def boardDiagnostics_TX7364(deviceEvm):
+	flag = True
+	while flag == True:
+		# Convert the number to a 32-bit binary string
+		reg1D = format(deviceRead(deviceEvm, 0x1D), '032b') # P83
+		reg4D = format(deviceRead(deviceEvm, 0x4D), '032b') # P92
+		reg4E = format(deviceRead(deviceEvm, 0x4E), '032b') # P93
+		reg62 = format(deviceRead(deviceEvm, 0x62), '032b') # P99
+		reg6C = format(deviceRead(deviceEvm, 0x6C), '032b') # P102
+		reg78 = format(deviceRead(deviceEvm, 0x78), '032b') # P104
+
+		# Define the error checks in the desired order; Index = 31 - Bit (Bit31, Bit30, ..., Bit1, Bit0)
+		checks = [
+		(int(reg4D[-6:], 2) > 0, "TEMP_SHUT_ERR[11:6]: FAILED", "TEMP_SHUT_ERR[11:6]: PASSED"),
+		(int(reg62[-6:], 2) > 0, "TEMP_SHUT_ERR[5:0]: FAILED", "TEMP_SHUT_ERR[5:0]: PASSED"),
+		(reg6C[15] != '1', "NO_CLK_ERR: FAILED", "NO_CLK_ERR: PASSED"),
+		(reg1D[31] != '0', "SINGLE_LVL_ERR: FAILED", "SINGLE_LVL_ERR: PASSED"),
+		(reg1D[29] != '0', "LONG_TRAN_ERR: FAILED", "LONG_TRAN_ERR: PASSED"),
+		(reg4E[27] != '0', "P5V_SUP_ERR: FAILED", "P5V_SUP_ERR: PASSED"),
+		(reg4E[26] != '0', "M5V_SUP_ERR: FAILED", "M5V_SUP_ERR: PASSED"),
+		(reg4E[16] != '0', "PHV_RANGE_ERR: FAILED", "PHV_RANGE_ERR: PASSED"),
+		(reg78[29] != '0', "TRIG_ERR: FAILED", "TRIG_ERR: PASSED"),
+		(reg78[31] != '0', "STANDBY_ERR: FAILED", "STANDBY_ERR: PASSED"),
+		(int(reg4D[:5], 2) != 21, "VALID_FLAG_1: FAILED", "VALID_FLAG_1: PASSED"),
+		(int(reg4E[:5], 2) != 10, "VALID_FLAG_2: FAILED", "VALID_FLAG_2: PASSED"),
+		(int(reg62[:5], 2) != 11, "VALID_FLAG_3: FAILED", "VALID_FLAG_3: PASSED"),
+		(int(reg6C[:5], 2) != 22, "VALID_FLAG_4: FAILED", "VALID_FLAG_4: PASSED"),
+		(int(reg78[:5], 2) != 25, "VALID_FLAG_5: FAILED", "VALID_FLAG_5: PASSED"),
+		(reg4D[15] != '0', "ERROR_RST: FAILED", "ERROR_RST: PASSED")
+		]
+		
+		# Perform the checks
+		for condition, fail_msg, pass_msg in checks:
+			print(fail_msg if condition else pass_msg)
+			flag = flag and not condition  # If any condition fails, set flag to False
+
+		if flag == False:
+			print("Diagnostics failed, reset the error flags")
+			if reg6C[15] != '1': # NO_CLK_ERR
 				deviceWrite(deviceEvm, 0x08, 0x00000002)
 			deviceWrite(deviceEvm, 0x2B, 1 << 26) # Set the ERROR_RST bit to 1 to reset the error flags
 			time.sleep(1)

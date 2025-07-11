@@ -71,7 +71,3 @@ print(regVal)   # Should print 255 (0xff)
 # Read from memory page 8 address 200
 regVal = deviceRead(200,1<<8)
 print(regVal)   # Should print 255 (0xff)
-
-
-# Q:
-# 1. Page 5 should select 1<<4 ?

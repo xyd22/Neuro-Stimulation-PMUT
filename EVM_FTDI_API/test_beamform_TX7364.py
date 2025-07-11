@@ -14,8 +14,8 @@ import subprocess
 
 from deviceController import USBQPort
 from pyftdi.gpio import GpioController
-from tools import hardwareReset, deviceWrite, deviceRead, memReset, boardDiagnostics
-from config import all_delay_hex_values, mem_start_word, pattern
+from tools import hardwareReset, deviceWrite, deviceRead, memReset, boardDiagnostics_TX7364
+from config_TX7364 import delay_start_word, all_delay_hex_values, pattern_start_word, pattern
 
 
 if __name__ == "__main__":
@@ -50,42 +50,39 @@ if __name__ == "__main__":
 			
 			# Disable sync before any SPI operation
 			deviceEvm.enableSync(False)
-			deviceWrite(deviceEvm, 0x08, 0x00000000) # Disable Detect Clock Sync; P78, register 8h Bit1 EN_SYNC_DET
+			deviceWrite(deviceEvm, 0x08, 0x00000000) # Disable Detect Clock Sync;
 			
 			# Memory reset
-			memReset(deviceEvm)
+			# memReset(deviceEvm)
 			
-			# Software reset; P71, register 0h Bit0 RESET
+			# Software reset;
 			if first_run:
 				deviceWrite(deviceEvm, 0x0, 0x00000001)
+
+			# Setting CONST_1 and CONST_2 bits to '1'
+			deviceWrite(deviceEvm, 0x51, 0x00050000)
 			
 			# Diagnose the board
-			boardDiagnostics(deviceEvm)
+			boardDiagnostics_TX7364(deviceEvm)
+
+			# Setting the T/R Switch ON delays of channels to 0.
+			deviceWrite(deviceEvm, 0x80, 0x0)
+			deviceWrite(deviceEvm, 0x81, 0x0)
 			
-			# Set some limits for power supplies (A/B)
-			deviceWrite(deviceEvm, 0x2C, 0x7FC00F07) # Supply limits for AVDDP_HV_A
-			deviceWrite(deviceEvm, 0x2D, 0x00400F07) # Supply limits for AVDDP_HV_B
-			# 7FC->max duration; 00F->fixed; 0->lower limit; 7->upper limit (F for 100V, guess 7 for ~50V)
-			# 004->max transition count; 00F->fixed; 0->lower limit; 7->upper limit (F for 100V, guess 7 for ~50V)
+			# Choose the starting point of the memory for pattern
+			deviceWrite(deviceEvm, 0x33, pattern_start_word)
+
+			# Choose the starting point of the memory for delay
+			for reg_index in range(0x0D, 0x15): # Reg 0x0D to 0x14
+				deviceWrite(deviceEvm, reg_index, (delay_start_word << 16) | delay_start_word)
+			# assume the starting point is the same for all memory blocks
 			
-			# Choose the starting point of the memory (further choose the pattern)
-			# we can pre-define a lot of patterns in mem words for each channel,
-			# by setting the start word we choose the one to output
-			# in config.py mem_start_word = 0x001E -> 0x001E001E
-			# 1E -> Memory Word starts from 1E -> waveforms reads from 30th mem word (m for MEM_WORD_n_m)
-			for reg_index in range(0x0C, 0x14): # Register 0x0C to 0x13
-				deviceWrite(deviceEvm, reg_index, (mem_start_word << 16) | mem_start_word)
-				# Write the same mem_start_word to all registers from 0x0C to 0x13
-				# Each register corresponds to two memory words
-				# (e.g., 0x0C -> Mem. Start Word for channel 2 and 1;...; 0x0F -> 8 and 7;...; 0x13 -> 16 and 15)
-			# Why not use Register 08 Bit6 GBL_PAT_START_ADD	
-					
 			# deviceWrite(deviceEvm, 0x02, 0x0000FFFF) # Pattern Page Select for all 16 channels; P103
 
-			# Mem word starts from 1E, so the pattern generator starts to search from 0x40+0x1E=0x5E
+			# Mem word starts from 0x7, so the pattern generator starts to search from 0x80+0x7=0x87
 			# 0x0000FFFF -> Page Select for all 16 channels
 			for i, pat in enumerate(pattern):
-				deviceWrite(deviceEvm, 0x40 + mem_start_word + i, pat, pageSelect=0x0000FFFF)
+				deviceWrite(deviceEvm, 0x80 + pattern_start_word + i, pat, pageSelect=0x0000FFFF)
 			# Refer to config.py for detailed pattern examples and explanations
 
 			first_run = False # Set the flag to False after the first run
@@ -94,12 +91,13 @@ if __name__ == "__main__":
 			print("Processing delay set for angle index {}".format(idx))		
 			print("==========================================================")			
 							
-			# deviceWrite(deviceEvm, 0x02, 0x00010000) # Delay Page Select; P103
-			for index, reg_index in enumerate(range(0x40, 0x48)): # Register 0x40 to 0x47
-				deviceWrite(deviceEvm, reg_index, delays_int[index], pageSelect=0x00010000)
-				# Write the delays to registers 0x40 to 0x47
-				# Each register corresponds to a specific delay value
-				# e.g., 0x40 -> Delay 2 1; 0x41 -> Delay 4 3; ...; 0x47 -> Delay 16 15
+			# deviceWrite(deviceEvm, 0x02, 0x00010000) # Delay Page Select
+			# same starting point, different content for different pages
+			for pageNum in range(1, 17): # 16 pages
+				pageSel = 1 << pageNum
+				deviceWrite(deviceEvm, 0x80 + delay_start_word, delays_int[2*pageNum-2], pageSelect=pageSel)
+				deviceWrite(deviceEvm, 0x80 + delay_start_word + 1, delays_int[2*pageNum-1], pageSelect=pageSel)
+			# Keep in mind of the arrangement of all_delay_hex_values in config.py
 			
 			# deviceWrite(deviceEvm, 0x02, 0x00000000) # Deselect Pages
 			# This is written in definition of deviceWrite function

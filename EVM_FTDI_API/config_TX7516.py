@@ -1,3 +1,6 @@
+
+delay_start_word = 0x0
+
 all_delay_hex_values = [
 [0x1EE71ED5, 0x5F0A5EF8, 0x1F2E5F1C, 0x1F521F40, 0x5F995F87, 0x1FBD1FAB, 0x1FE11FCF, 0x20005FF2],
 # [0x5EEF1EDE, 0x1F125F00, 0x5F341F23, 0x1F571F46, 0x5F9C1F8B, 0x1FBF1FAE, 0x5FE15FD0, 0x20001FF3],
@@ -72,10 +75,10 @@ all_delay_hex_values = [
 # !! refer to P102~103 for registers and examples
 
 
-mem_start_word = 0x001E
-
+pattern_start_word = 0x001E
 
 pattern = [0xB5B10000, 0xFF00B5B1]
+# pattern = [0x31F90000, 0x31F935FD, 0xFF0035FD] # 3.4 MHz_2LVL_A Wave
 # some example patterns
 # deviceWrite(deviceEvm, 0x5C, 0xA0A00000, pageSelect=0x0000FFFF) # TRSW Glitch --OURS--nothing		
 # deviceWrite(deviceEvm, 0x5D, 0x0000FF00, pageSelect=0x0000FFFF) # TRSW Glitch --OURS--		

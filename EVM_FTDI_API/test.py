@@ -22,8 +22,14 @@ deviceEvm = USBQPort('FT4232 Mini Module A')
 print("Initialized USBQPort")
 dev = deviceEvm.controller.instrument
 
+print("Device list:", ftd2xx.listDevices())
+print("Device info:", dev.getDeviceInfo())
+print("Bit mode (before):", dev.getBitMode())
+
 dev.setBitMode(0xFF, 0x01)
+time.sleep(0.1)
 print("Bit mode:", dev.getBitMode())  # 应输出 1
+time.sleep(0.1)
 
 # 全部拉低
 dev.write(bytes([0x00]))
