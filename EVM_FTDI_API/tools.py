@@ -21,7 +21,9 @@ TR_BF_SYNC = 0x80
 # WAKE_UP has no connection, can only control it through FPGA or other microcontrollers
 
 
-def hardwareReset(dev):
+def hardwareReset_TX7516(deviceEvm):
+	dev = deviceEvm.controller.instrument
+
 	dev.setBitMode(0xFF, 0x01)
 
 	# Pull Low all pins
@@ -37,11 +39,41 @@ def hardwareReset(dev):
 	#===================================================
 	# Wait for WAKE_UP (200 us pulse), need an external microcontroller to control
 	#================
-	print("Waiting for WAKE_UP signal for 5s...")
-	print("Please send a pulse to WAKE_UP pin (200 us pulse)...")
-	time.sleep(5)
-	print("Stop waiting for WAKE_UP signal, continuing...")
+	# print("Waiting for WAKE_UP signal for 5s...")
+	# print("Please send a pulse to WAKE_UP pin (200 us pulse)...")
+	# time.sleep(5)
+	# print("Stop waiting for WAKE_UP signal, continuing...")
 	#================
+	# Seems set DIS_DYN_PDN_LDO = '1', no need to wait for WAKE_UP signal
+	deviceWrite(deviceEvm, 0x30, 0x00080000) # P71
+
+	time.sleep(0.001)  # Wait for 1 ms
+
+def hardwareReset_TX7364(deviceEvm):
+	dev = deviceEvm.controller.instrument
+
+	dev.setBitMode(0xFF, 0x01)
+
+	# Pull Low all pins
+	dev.write(bytes([0x00]))
+
+	# RESET pull up for 100 µs (min 50 us)
+	dev.write(bytes([RESET]))
+	time.sleep(0.0001)
+	dev.write(bytes([0x00]))
+
+
+    # Seems no need for external WAKE_UP signal !!!???
+	#===================================================
+	# Wait for WAKE_UP (200 us pulse), need an external microcontroller to control
+	#================
+	# print("Waiting for WAKE_UP signal for 5s...")
+	# print("Please send a pulse to WAKE_UP pin (200 us pulse)...")
+	# time.sleep(5)
+	# print("Stop waiting for WAKE_UP signal, continuing...")
+	#================
+	# Seems set DIS_DYN_PDN_LDO = '1', no need to wait for WAKE_UP signal
+	deviceWrite(deviceEvm, 0x5C, 0x00001000) # P98
 
 	time.sleep(0.001)  # Wait for 1 ms
 
@@ -157,9 +189,9 @@ def boardDiagnostics_TX7364(deviceEvm):
 			print("Diagnostics failed, reset the error flags")
 			if reg6C[15] != '1': # NO_CLK_ERR
 				deviceWrite(deviceEvm, 0x08, 0x00000002)
-			deviceWrite(deviceEvm, 0x2B, 1 << 26) # Set the ERROR_RST bit to 1 to reset the error flags
+			deviceWrite(deviceEvm, 0x4D, 1 << 16) # Set the ERROR_RST bit to 1 to reset the error flags
 			time.sleep(1)
-			deviceWrite(deviceEvm, 0x2B, 0) # Reset the ERROR_RST bit to 0
+			deviceWrite(deviceEvm, 0x4D, 0) # Reset the ERROR_RST bit to 0
 			flag = True # Try again
 		elif flag == True:
 			return
@@ -168,7 +200,7 @@ def memReset(deviceEvm):
 	print("Start to reset the memory! Please wait...")
 	for addr in range(0x00, 0x40):  # 0x40 is excluded
 		try:
-			deviceWrite(deviceEvm, addr, 0x00000000)
+			deviceWrite(deviceEvm, addr, 0x00000000, 0x0000FFFF) # only refresh the pattern memory
 		except Exception as e:
 			print("Failed to write 0 to register {}".format(e))
 	print("Memory reset!")

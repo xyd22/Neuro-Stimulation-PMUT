@@ -14,7 +14,7 @@ import subprocess
 
 from deviceController import USBQPort
 from pyftdi.gpio import GpioController
-from tools import hardwareReset, deviceWrite, deviceRead, memReset, boardDiagnostics_TX7364
+from tools import hardwareReset_TX7364, deviceWrite, deviceRead, memReset, boardDiagnostics_TX7364
 from config_TX7364 import delay_start_word, all_delay_hex_values, pattern_start_word, pattern
 
 
@@ -28,13 +28,12 @@ if __name__ == "__main__":
 	# Instructions to find the address is present in the attached document
 	deviceEvm = USBQPort('FT4232 Mini Module A')
 	print("Initialized USBQPort")
-	dev = deviceEvm.controller.instrument
 
 
 	# Initialize necessary components before the loop
 	first_run = True # Initialize a flag
 
-	hardwareReset(dev) # Perform hardware reset
+	hardwareReset_TX7364(deviceEvm) # Perform hardware reset
 
 	# Repeat the entire process 5 times
 	for repeat_idx in range(1):
@@ -52,15 +51,15 @@ if __name__ == "__main__":
 			deviceEvm.enableSync(False)
 			deviceWrite(deviceEvm, 0x08, 0x00000000) # Disable Detect Clock Sync;
 			
-			# Memory reset
-			# memReset(deviceEvm)
-			
 			# Software reset;
 			if first_run:
 				deviceWrite(deviceEvm, 0x0, 0x00000001)
 
 			# Setting CONST_1 and CONST_2 bits to '1'
 			deviceWrite(deviceEvm, 0x51, 0x00050000)
+
+			# Memory reset
+			memReset(deviceEvm)
 			
 			# Diagnose the board
 			boardDiagnostics_TX7364(deviceEvm)

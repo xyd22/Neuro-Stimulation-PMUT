@@ -4,7 +4,8 @@ from deviceController import USBQPort
 # Create the EVM Qport object
 # The string passed is the address of the FTDI port
 # Instructions to find the address is present in the attached document
-deviceEvm = USBQPort('FT4232 Mini Module A')
+# deviceEvm = USBQPort('FT4232 Mini Module A')
+deviceEvm = USBQPort('TX7332') # For TX7332 only
 
 def deviceWrite(address,data,pageSelect=0):
     # First do the page select. Page select value needs to be written to register 2 in single lane SPI mode.

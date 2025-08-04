@@ -11,14 +11,21 @@ import ftd2xx
 import time
 import os
 import subprocess
+import argparse
 
 from deviceController import USBQPort
 from pyftdi.gpio import GpioController
-from tools import hardwareReset, deviceWrite, deviceRead, memReset, boardDiagnostics_TX7516
-from config_TX7516 import delay_start_word, all_delay_hex_values, pattern_start_word, pattern
+from tools import hardwareReset_TX7516, deviceWrite, deviceRead, memReset, boardDiagnostics_TX7516
+from config_TX7516 import delay_start_word, zero_delay_hex_values, all_delay_hex_values, pattern_start_word, pattern
 
 
 if __name__ == "__main__":
+	
+	# parser = argparse.ArgumentParser()
+	# parser.add_argument('-a', '--angle', help='beamforming angle', default=0)
+	# args = parser.parse_args()
+	# theta = args.angle
+
 
 	print("##########################################################")
 	print("##########################################################")
@@ -28,13 +35,12 @@ if __name__ == "__main__":
 	# Instructions to find the address is present in the attached document
 	deviceEvm = USBQPort('FT4232 Mini Module A')
 	print("Initialized USBQPort")
-	dev = deviceEvm.controller.instrument
 
 
 	# Initialize necessary components before the loop
 	first_run = True # Initialize a flag
 
-	hardwareReset(dev) # Perform hardware reset
+	hardwareReset_TX7516(deviceEvm) # Perform hardware reset
 
 	# Repeat the entire process 5 times
 	for repeat_idx in range(1):
@@ -61,6 +67,13 @@ if __name__ == "__main__":
 			
 			# Diagnose the board
 			boardDiagnostics_TX7516(deviceEvm)
+
+			# Disable the T/R switch + power down broken channels
+			deviceWrite(deviceEvm, 0x07, 0xFFFF0180) 
+			# deviceWrite(deviceEvm, 0x07, 0xFFFF0000) 
+			# T/R switch: 0xFFFF0000
+			# Power down channels: 0x00000190 -> power down ch 5/8/9 (broken)
+
 			
 			# Set some limits for power supplies (A/B)
 			deviceWrite(deviceEvm, 0x2C, 0x7FC00F07) # Supply limits for AVDDP_HV_A

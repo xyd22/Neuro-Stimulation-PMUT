@@ -1,6 +1,7 @@
 import time
 import numpy as np
 # ftd2xx==1.1.2
+# https://ftd2xx.github.io/ftd2xx/
 import ftd2xx as d2xx
 
 class USBQPortController():
@@ -149,7 +150,7 @@ class USBQPortController():
         self.instrument.purge()
         readSize=self.instrument.write(bytes(stringArray))
         readData=self.instrument.read(readSize)
-        rdData=((np.array([char for char in readData]) >> self.dataOutBit)	 & 1)[-1+(self.readClkEdge)-(2*(self.packetLen-self.addressLen)):-1:2]
+        rdData=((np.array([char for char in readData]) >> self.dataOutBit) & 1)[-1+(self.readClkEdge)-(2*(self.packetLen-self.addressLen)):-1:2]
         if self.msbFirst==1:
             no=int(''.join([str(bit) for bit in rdData]),2)
         else:
