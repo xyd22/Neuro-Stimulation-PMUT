@@ -85,6 +85,7 @@ pattern_start_word = 0x001E
 pattern = [0xB5B10100, 0xC8C80500, 0x0000FF00]
 # pattern = [0x95910000, 0xA5A19D99, 0xB5B1ADA9, 0xC5C1BDB9, 0xD5D1CDC9, 0xE5E1DDD9, 0x0000FF00] # FMCW
 # pattern = [0x31F90300, 0x050035FD, 0xFF00C8C8] # 3.4 MHz_2LVL_A Wave
+# pattern = [0x00F90304, 0xFF00FD03]
 # some example patterns
 # deviceWrite(deviceEvm, 0x5C, 0xA0A00000, pageSelect=0x0000FFFF) # TRSW Glitch --OURS--nothing		
 # deviceWrite(deviceEvm, 0x5D, 0x0000FF00, pageSelect=0x0000FFFF) # TRSW Glitch --OURS--		
